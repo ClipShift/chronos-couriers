@@ -3,13 +3,13 @@ package org.chronos.model;
 public class Rider {
     private String id;
     private RiderStatus status;
-    private double reliabilityRating;
+    private double reliability;
     private boolean canHandleFragile;
 
-    public Rider(String id, RiderStatus status, double reliabilityRating, boolean canHandleFragile) {
+    public Rider(String id, RiderStatus status, double reliability, boolean canHandleFragile) {
         this.id = id;
         this.status = status;
-        this.reliabilityRating = reliabilityRating;
+        this.reliability = reliability;
         this.canHandleFragile = canHandleFragile;
     }
 
@@ -29,12 +29,12 @@ public class Rider {
         this.status = status;
     }
 
-    public double getReliabilityRating() {
-        return reliabilityRating;
+    public double getReliability() {
+        return reliability;
     }
 
-    public void setReliabilityRating(double reliabilityRating) {
-        this.reliabilityRating = reliabilityRating;
+    public void setReliability(double reliability) {
+        this.reliability = reliability;
     }
 
     public boolean isCanHandleFragile() {

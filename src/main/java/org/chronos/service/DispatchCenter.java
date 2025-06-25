@@ -19,8 +19,7 @@ public class DispatchCenter {
 
     private final Map<String, Package> packages = new HashMap<>();
     private final Map<String, Rider> riders = new HashMap<>();
-    private final List<Assignment> assignments = new ArrayList<>();
-    private final AuditService auditService = new AuditService();
+    private final AuditService auditLogger = new AuditService(packages);
 
     private final PriorityQueue<Package> pendingPackages = new PriorityQueue<>(
             Comparator.comparing(Package::getType).reversed()
@@ -31,13 +30,32 @@ public class DispatchCenter {
     public void placeOrder(Package pkg) {
         packages.put(pkg.getId(), pkg);
         pendingPackages.offer(pkg);
-        auditService.log("Package placed: " + pkg.getId());
+        auditLogger.log("Package placed: " + pkg.getId());
         assignPackages();
     }
 
     public void updateRider(Rider rider) {
+        // If new rider, set default reliability
+        if (!riders.containsKey(rider.getId())) {
+            rider.setReliability(5.0);
+        }
+
+        // Check if going offline mid-delivery
+        if (rider.getStatus() == RiderStatus.UNAVAILABLE) {
+            auditLogger.getAllAssignments().stream()
+                    .filter(a -> a.getRiderId().equals(rider.getId()) && a.getDeliveryTime() == 0)
+                    .forEach(a -> {
+                        Package pkg = packages.get(a.getPackageId());
+                        if (pkg != null && pkg.getStatus() == PackageStatus.ASSIGNED) {
+                            pkg.setStatus(PackageStatus.PENDING);
+                            pendingPackages.offer(pkg);
+                            auditLogger.log("Rider " + rider.getId() + " went offline. Package " + pkg.getId() + " reassigned to queue.");
+                        }
+                    });
+        }
+
         riders.put(rider.getId(), rider);
-        auditService.log("Rider updated: " + rider.getId() + " Status: " + rider.getStatus());
+        auditLogger.log("Rider updated: " + rider.getId() + " Status: " + rider.getStatus());
         assignPackages();
     }
 
@@ -56,8 +74,11 @@ public class DispatchCenter {
 
                 pkg.setStatus(PackageStatus.ASSIGNED);
                 rider.setStatus(RiderStatus.DELIVERING);
-                assignments.add(new Assignment(pkg.getId(), rider.getId(), now, 0));
-                auditService.log("Package assigned: " + pkg.getId() + " to Rider: " + rider.getId());
+
+                Assignment assignment = new Assignment(pkg.getId(), rider.getId(), now, 0);
+                auditLogger.logAssignment(assignment);
+                auditLogger.log("Package assigned: " + pkg.getId() + " to Rider: " + rider.getId());
+
                 toBeRemoved.add(pkg);
             }
         }
@@ -70,28 +91,40 @@ public class DispatchCenter {
         if (pkg == null || pkg.getStatus() != PackageStatus.ASSIGNED) return;
 
         pkg.setStatus(PackageStatus.DELIVERED);
-        Assignment assignment = assignments.stream()
+        Assignment assignment = auditLogger.getAllAssignments().stream()
                 .filter(a -> a.getPackageId().equals(packageId))
                 .findFirst()
                 .orElse(null);
+
         if (assignment != null) {
-            assignment.setDeliveryTime(System.currentTimeMillis());
+            long deliveryTime = System.currentTimeMillis();
+            assignment.setDeliveryTime(deliveryTime);
+
             Rider rider = riders.get(assignment.getRiderId());
-            if (rider != null) rider.setStatus(RiderStatus.AVAILABLE);
-            auditService.log("Package delivered: " + packageId + " by Rider: " + assignment.getRiderId());
+            if (rider != null) {
+                // Reliability adjustment
+                if (deliveryTime > pkg.getDeliveryDeadline()) {
+                    rider.setReliability(Math.max(0, rider.getReliability() - 1));
+                } else {
+                    rider.setReliability(Math.min(5.0, rider.getReliability() + 0.1));
+                }
+                rider.setStatus(RiderStatus.AVAILABLE);
+            }
+
+            auditLogger.log("Package delivered: " + packageId + " by Rider: " + assignment.getRiderId());
         }
     }
 
     public Object getStatus(String id) {
         if (packages.containsKey(id)) return packages.get(id);
         if (riders.containsKey(id)) return riders.get(id);
-        return assignments.stream()
+        return auditLogger.getAllAssignments().stream()
                 .filter(a -> a.getPackageId().equals(id) || a.getRiderId().equals(id))
                 .collect(Collectors.toList());
     }
 
     public List<Assignment> getAssignments() {
-        return assignments;
+        return auditLogger.getAllAssignments();
     }
 
     public List<Package> getAllPackages() {
@@ -103,14 +136,22 @@ public class DispatchCenter {
     }
 
     public List<String> getAuditLogs() {
-        return auditService.getAllLogs();
+        return auditLogger.getAllLogs();
     }
 
     public List<String> getRecentAuditLogs(long withinMillis) {
-        return auditService.getLogsInLastNMillis(withinMillis);
+        return auditLogger.getLogsInLastNMillis(withinMillis);
     }
 
     public List<String> getLogsByKeyword(String keyword) {
-        return auditService.getLogsByKeyword(keyword);
+        return auditLogger.getLogsByKeyword(keyword);
+    }
+
+    public List<Package> getDeliveredByRiderInLast24Hours(String riderId) {
+        return auditLogger.getDeliveredByRiderInLast24Hours(riderId);
+    }
+
+    public List<Package> getMissedExpressDeliveries() {
+        return auditLogger.getMissedExpressDeliveries();
     }
 }
