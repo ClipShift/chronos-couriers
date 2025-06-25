@@ -23,7 +23,7 @@ Available Commands:
 Features:
 ---------
 - Used a priority queue to assign Express packages before Standard packages.
-- For express packages, highest reliability available drivers are selected.
+- For express packages, highest reliability available drivers are selected (Created different assignment strategy for different type of packages).
 - If a driver misses a delivery their reliability is decreased by 1, they can regain .1 reliability for each successful delivery.
 - Logs are stores for every information.
 - evaluates packages in priority order using a custom comparator:
@@ -31,4 +31,4 @@ EXPRESS > STANDARD then Sooner deadline > Later deadline then Earlier order time
 
 Improvements to make:
 - Can apply factory design pattern to create type of packages if they have multiple default properties differing on basis on package type.
-- Can apply strategy design pattern for assignment logic
+ or maybe can use decorator pattern to simply calculation of cost of package, for example Fragile(Express(Light Weight(Package))) or Express(Heavy Weight(Package)) based on different properties.

@@ -23,29 +23,14 @@ public class CLIService {
 
         String command = parts[0];
         switch (command.toLowerCase()) {
-            case "place_order":
-                handlePlaceOrder(parts);
-                break;
-            case "update_rider_status":
-                handleUpdateRiderStatus(parts);
-                break;
-            case "simulate_delivery":
-                handleSimulateDelivery(parts);
-                break;
-            case "get_status":
-                handleGetStatus(parts);
-                break;
-            case "audit_query":
-                handleAuditQuery(parts);
-                break;
-            case "help":
-                handleHelp();
-                break;
-            case "current_deliveries":
-                handleCurrentDeliveries();
-                break;
-            default:
-                System.out.println("Unknown command: " + command);
+            case "place_order" -> handlePlaceOrder(parts);
+            case "update_rider_status" -> handleUpdateRiderStatus(parts);
+            case "simulate_delivery" -> handleSimulateDelivery(parts);
+            case "get_status" -> handleGetStatus(parts);
+            case "audit_query" -> handleAuditQuery(parts);
+            case "help" -> handleHelp();
+            case "current_deliveries" -> handleCurrentDeliveries();
+            default -> System.out.println("Unknown command: " + command);
         }
     }
 
