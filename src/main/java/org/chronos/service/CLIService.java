@@ -143,7 +143,7 @@ public class CLIService {
     public void handleHelp() {
         System.out.println("\nAvailable Commands:");
         System.out.println("-------------------");
-        System.out.println("place_order <EXPRESS|STANDARD> <delivery_time_in_hours> <fragile>");
+        System.out.println("place_order <EXPRESS|STANDARD> <delivery_time_in_minutes> <fragile>");
         System.out.println("update_rider_status <rider_id> <AVAILABLE|UNAVAILABLE|DELIVERING> <can_handle_fragile>");
         System.out.println("simulate_delivery <package_id>");
         System.out.println("get_status <package_id|rider_id>");
