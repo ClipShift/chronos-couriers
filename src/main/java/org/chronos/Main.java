@@ -12,10 +12,11 @@ public class Main {
         DispatchCenter dispatchCenter = new DispatchCenter();
         CLIService commandHandler = new CLIService(dispatchCenter);
 
-        System.out.println("Chronos Couriers CLI Started. Enter commands:");
-
+        System.out.println("Chronos Couriers CLI Started");
+        commandHandler.handleHelp();
         Scanner scanner = new Scanner(System.in);
         while (true) {
+            System.out.print("#: ");
             String line = scanner.nextLine();
             if (line.equalsIgnoreCase("exit")) break;
             try {

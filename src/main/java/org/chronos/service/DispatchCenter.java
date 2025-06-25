@@ -35,12 +35,10 @@ public class DispatchCenter {
     }
 
     public void updateRider(Rider rider) {
-        // If new rider, set default reliability
         if (!riders.containsKey(rider.getId())) {
             rider.setReliability(5.0);
         }
 
-        // Check if going offline mid-delivery
         if (rider.getStatus() == RiderStatus.UNAVAILABLE) {
             auditLogger.getAllAssignments().stream()
                     .filter(a -> a.getRiderId().equals(rider.getId()) && a.getDeliveryTime() == 0)

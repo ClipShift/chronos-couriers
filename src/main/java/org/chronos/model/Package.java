@@ -65,4 +65,16 @@ public class Package {
     public void setStatus(PackageStatus status) {
         this.status = status;
     }
+
+    @Override
+    public String toString() {
+        return "Package{" +
+                "id='" + id + '\'' +
+                ", type=" + type +
+                ", orderTimestamp=" + orderTimestamp +
+                ", deliveryDeadline=" + deliveryDeadline +
+                ", fragile=" + fragile +
+                ", status=" + status +
+                '}';
+    }
 }

@@ -44,4 +44,14 @@ public class Rider {
     public void setCanHandleFragile(boolean canHandleFragile) {
         this.canHandleFragile = canHandleFragile;
     }
+
+    @Override
+    public String toString() {
+        return "Rider{" +
+                "id='" + id + '\'' +
+                ", status=" + status +
+                ", reliability=" + reliability +
+                ", canHandleFragile=" + canHandleFragile +
+                '}';
+    }
 }

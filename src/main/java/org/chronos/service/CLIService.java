@@ -1,5 +1,6 @@
 package org.chronos.service;
 
+import org.chronos.model.Assignment;
 import org.chronos.model.PackageType;
 import org.chronos.model.Rider;
 import org.chronos.model.RiderStatus;
@@ -9,9 +10,11 @@ import java.util.List;
 
 public class CLIService {
     private final DispatchCenter dispatchCenter;
+    private int packageIdCounter;
 
     public CLIService(DispatchCenter dispatchCenter) {
         this.dispatchCenter = dispatchCenter;
+        this.packageIdCounter = 0;
     }
 
     public void handle(String input) {
@@ -38,36 +41,41 @@ public class CLIService {
             case "help":
                 handleHelp();
                 break;
+            case "current_deliveries":
+                handleCurrentDeliveries();
+                break;
             default:
                 System.out.println("Unknown command: " + command);
         }
     }
 
     private void handlePlaceOrder(String[] parts) {
-        if (parts.length < 5) {
-            System.out.println("Usage: place_order <package_id> <EXPRESS|STANDARD> <delivery_time_in_hours> <fragile>");
+        if (parts.length < 4) {
+            System.out.println("Usage: place_order <EXPRESS|STANDARD> <delivery_time_in_minutes> <fragile>");
             return;
         }
-        String id = parts[1];
+        String id = "PKG" + packageIdCounter;
+        packageIdCounter++;
+
         PackageType type;
         try {
-            type = PackageType.valueOf(parts[2].toUpperCase());
+            type = PackageType.valueOf(parts[1].toUpperCase());
         } catch (IllegalArgumentException e) {
             System.out.println("Invalid package type. Use EXPRESS or STANDARD.");
             return;
         }
 
-        long hours;
+        long minutes;
         try {
-            hours = Long.parseLong(parts[3]);
+            minutes = Long.parseLong(parts[2]);
         } catch (NumberFormatException e) {
-            System.out.println("Invalid delivery time. It should be a number representing hours.");
+            System.out.println("Invalid delivery time. It should be a number representing minutes.");
             return;
         }
 
-        boolean fragile = Boolean.parseBoolean(parts[4]);
+        boolean fragile = Boolean.parseBoolean(parts[3]);
         long now = System.currentTimeMillis();
-        long deadline = now + (hours * 60 * 60 * 1000); // Convert hours to milliseconds
+        long deadline = now + (minutes * 60 * 1000); // Convert minutes to milliseconds
 
         Package pkg = new Package(id, type, now, deadline, fragile);
         dispatchCenter.placeOrder(pkg);
@@ -79,7 +87,7 @@ public class CLIService {
             System.out.println("Usage: update_rider_status <rider_id> <AVAILABLE|UNAVAILABLE|DELIVERING> <can_handle_fragile> <reliability_rating>");
             return;
         }
-        String id = parts[1];
+        String id = "RD" + parts[1];
         RiderStatus status = RiderStatus.valueOf(parts[2].toUpperCase());
         boolean canHandleFragile = Boolean.parseBoolean(parts[3]);
         double rating = parts.length > 4 ? Double.parseDouble(parts[4]) : 5.0;
@@ -133,15 +141,30 @@ public class CLIService {
         }
     }
 
-    private void handleHelp() {
+    private void handleCurrentDeliveries() {
+        List<Assignment> assignments = dispatchCenter.getAssignments();
+        boolean found = false;
+        for (Assignment a : assignments) {
+            if (a.getDeliveryTime() == 0) {
+                System.out.println("Package " + a.getPackageId() + " is being delivered by Rider " + a.getRiderId());
+                found = true;
+            }
+        }
+        if (!found) {
+            System.out.println("No packages are currently being delivered.");
+        }
+    }
+
+    public void handleHelp() {
         System.out.println("\nAvailable Commands:");
         System.out.println("-------------------");
-        System.out.println("place_order <package_id> <EXPRESS|STANDARD> <delivery_time_in_hours> <fragile>");
+        System.out.println("place_order <EXPRESS|STANDARD> <delivery_time_in_hours> <fragile>");
         System.out.println("update_rider_status <rider_id> <AVAILABLE|UNAVAILABLE|DELIVERING> <can_handle_fragile>");
         System.out.println("simulate_delivery <package_id>");
         System.out.println("get_status <package_id|rider_id>");
         System.out.println("audit_query <rider_id>");
         System.out.println("audit_query missed_express");
+        System.out.println("current_deliveries");
         System.out.println("help");
         System.out.println("exit\n");
     }
