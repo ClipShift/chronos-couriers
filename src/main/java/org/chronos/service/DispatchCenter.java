@@ -3,6 +3,7 @@ package org.chronos.service;
 import org.chronos.model.Assignment;
 import org.chronos.model.Package;
 import org.chronos.model.PackageStatus;
+import org.chronos.model.PackageType;
 import org.chronos.model.Rider;
 import org.chronos.model.RiderStatus;
 
@@ -61,10 +62,19 @@ public class DispatchCenter {
         List<Package> toBeRemoved = new ArrayList<>();
 
         for (Package pkg : pendingPackages) {
-            Optional<Rider> matchedRider = riders.values().stream()
-                    .filter(r -> r.getStatus() == RiderStatus.AVAILABLE)
-                    .filter(r -> !pkg.isFragile() || r.isCanHandleFragile())
-                    .findFirst();
+            Optional<Rider> matchedRider;
+
+            if (pkg.getType() == PackageType.EXPRESS) {
+                matchedRider = riders.values().stream()
+                        .filter(r -> r.getStatus() == RiderStatus.AVAILABLE)
+                        .filter(r -> !pkg.isFragile() || r.isCanHandleFragile())
+                        .max(Comparator.comparingDouble(Rider::getReliability));
+            } else {
+                matchedRider = riders.values().stream()
+                        .filter(r -> r.getStatus() == RiderStatus.AVAILABLE)
+                        .filter(r -> !pkg.isFragile() || r.isCanHandleFragile())
+                        .findFirst();
+            }
 
             if (matchedRider.isPresent()) {
                 Rider rider = matchedRider.get();
