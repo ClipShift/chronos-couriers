@@ -5,12 +5,10 @@ import org.chronos.model.Package;
 import org.chronos.model.PackageStatus;
 import org.chronos.model.Rider;
 import org.chronos.model.RiderStatus;
-import org.chronos.model.Package;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +20,7 @@ public class DispatchCenter {
     private final Map<String, Package> packages = new HashMap<>();
     private final Map<String, Rider> riders = new HashMap<>();
     private final List<Assignment> assignments = new ArrayList<>();
+    private final AuditService auditService = new AuditService();
 
     private final PriorityQueue<Package> pendingPackages = new PriorityQueue<>(
             Comparator.comparing(Package::getType).reversed()
@@ -32,11 +31,13 @@ public class DispatchCenter {
     public void placeOrder(Package pkg) {
         packages.put(pkg.getId(), pkg);
         pendingPackages.offer(pkg);
+        auditService.log("Package placed: " + pkg.getId());
         assignPackages();
     }
 
     public void updateRider(Rider rider) {
         riders.put(rider.getId(), rider);
+        auditService.log("Rider updated: " + rider.getId() + " Status: " + rider.getStatus());
         assignPackages();
     }
 
@@ -56,6 +57,7 @@ public class DispatchCenter {
                 pkg.setStatus(PackageStatus.ASSIGNED);
                 rider.setStatus(RiderStatus.DELIVERING);
                 assignments.add(new Assignment(pkg.getId(), rider.getId(), now, 0));
+                auditService.log("Package assigned: " + pkg.getId() + " to Rider: " + rider.getId());
                 toBeRemoved.add(pkg);
             }
         }
@@ -76,6 +78,7 @@ public class DispatchCenter {
             assignment.setDeliveryTime(System.currentTimeMillis());
             Rider rider = riders.get(assignment.getRiderId());
             if (rider != null) rider.setStatus(RiderStatus.AVAILABLE);
+            auditService.log("Package delivered: " + packageId + " by Rider: " + assignment.getRiderId());
         }
     }
 
@@ -97,5 +100,17 @@ public class DispatchCenter {
 
     public List<Rider> getAllRiders() {
         return new ArrayList<>(riders.values());
+    }
+
+    public List<String> getAuditLogs() {
+        return auditService.getAllLogs();
+    }
+
+    public List<String> getRecentAuditLogs(long withinMillis) {
+        return auditService.getLogsInLastNMillis(withinMillis);
+    }
+
+    public List<String> getLogsByKeyword(String keyword) {
+        return auditService.getLogsByKeyword(keyword);
     }
 }
